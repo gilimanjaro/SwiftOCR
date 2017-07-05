@@ -6,8 +6,13 @@
 //  Copyright © 2016 Nicolas Camenisch. All rights reserved.
 //
 
+import Foundation
 import GPUImage
 
+#if os(macOS)
+    import Cocoa
+#endif
+    
 fileprivate func < <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
     switch (lhs, rhs) {
     case let (l?, r?):
@@ -526,97 +531,112 @@ open class SwiftOCR {
     open func preprocessImageForOCR(_ image:OCRImage) -> OCRImage {
         
         func getDodgeBlendImage(_ inputImage: OCRImage) -> OCRImage {
-            let image  = GPUImagePicture(image: inputImage)
-            let image2 = GPUImagePicture(image: inputImage)
+//            let image  = PictureInput(image: inputImage)        // was GPUImagePicture
+//            let image2 = PictureInput(image: inputImage)        // was GPUImagePicture
             
             //First image
             
-            let grayFilter      = GPUImageGrayscaleFilter()
-            let invertFilter    = GPUImageColorInvertFilter()
-            let blurFilter      = GPUImageBoxBlurFilter()
-            let opacityFilter   = GPUImageOpacityFilter()
+            let grayFilter      = Luminance()                   // was GPUImageGrayscaleFilter()
+            let invertFilter    = ColorInversion()              // was GPUImageColorInvertFilter()
+            let blurFilter      = BoxBlur()                     // was GPUImageBoxBlurFilter()
+            let opacityFilter   = OpacityAdjustment()           // was GPUImageOpacityFilter()
             
             blurFilter.blurRadiusInPixels = 9
             opacityFilter.opacity         = 0.93
             
-            image?       .addTarget(grayFilter)
-            grayFilter  .addTarget(invertFilter)
-            invertFilter.addTarget(blurFilter)
-            blurFilter  .addTarget(opacityFilter)
+//            image       .addTarget(grayFilter)
+//            grayFilter  .addTarget(invertFilter)
+//            invertFilter.addTarget(blurFilter)
+//            blurFilter  .addTarget(opacityFilter)
             
-            opacityFilter.useNextFrameForImageCapture()
+//            opacityFilter.useNextFrameForImageCapture()
             
+            
+            let processedImage1 = inputImage.filterWithPipeline{input, output in
+                input --> grayFilter --> invertFilter --> blurFilter --> opacityFilter --> output
+            }
             //Second image
             
-            let grayFilter2 = GPUImageGrayscaleFilter()
+            let grayFilter2 = Luminance()                       // was GPUImageGrayscaleFilter()
             
-            image2?.addTarget(grayFilter2)
+//            image2.addTarget(grayFilter2)
             
-            grayFilter2.useNextFrameForImageCapture()
+//            grayFilter2.useNextFrameForImageCapture()
             
             //Blend
             
-            let dodgeBlendFilter = GPUImageColorDodgeBlendFilter()
+            let dodgeBlendFilter = ColorDodgeBlend()            // was GPUImageColorDodgeBlendFilter()
             
-            grayFilter2.addTarget(dodgeBlendFilter)
-            image2?.processImage()
+//            grayFilter2.addTarget(dodgeBlendFilter)
+//            image2.processImage()
             
-            opacityFilter.addTarget(dodgeBlendFilter)
+//            opacityFilter.addTarget(dodgeBlendFilter)
             
-            dodgeBlendFilter.useNextFrameForImageCapture()
-            image?.processImage()
+//            dodgeBlendFilter.useNextFrameForImageCapture()
+//            image.processImage()
             
-            var processedImage:OCRImage? = dodgeBlendFilter.imageFromCurrentFramebuffer(with: UIImageOrientation.up)
-            
-            while processedImage?.size == CGSize.zero || processedImage == nil {
-                dodgeBlendFilter.useNextFrameForImageCapture()
-                image?.processImage()
-                processedImage = dodgeBlendFilter.imageFromCurrentFramebuffer(with: .up)
+            let processedImage2 = inputImage.filterWithPipeline{input,output in
+                input --> grayFilter2 --> dodgeBlendFilter --> opacityFilter --> output
             }
             
-            return processedImage!
+//            var processedImage:OCRImage? = dodgeBlendFilter.imageFromCurrentFramebuffer(with: ImageOrientation.up)
+            
+//            while processedImage?.size == CGSize.zero || processedImage == nil {
+//                dodgeBlendFilter.useNextFrameForImageCapture()
+//                image.processImage()
+//                processedImage = dodgeBlendFilter.imageFromCurrentFramebuffer(with: .up)
+//            }
+            
+//            return processedImage!
+            return processedImage2
         }
         
         let dodgeBlendImage        = getDodgeBlendImage(image)
-        let picture                = GPUImagePicture(image: dodgeBlendImage)
+//        let picture                = PictureInput(image: dodgeBlendImage)   // was GPUImagePicture
         
-        let medianFilter           = GPUImageMedianFilter()
-        let openingFilter          = GPUImageOpeningFilter()
-        let biliteralFilter        = GPUImageBilateralFilter()
-        let firstBrightnessFilter  = GPUImageBrightnessFilter()
-        let contrastFilter         = GPUImageContrastFilter()
-        let secondBrightnessFilter = GPUImageBrightnessFilter()
-        let thresholdFilter        = GPUImageLuminanceThresholdFilter()
-        
-        biliteralFilter.texelSpacingMultiplier      = 0.8
-        biliteralFilter.distanceNormalizationFactor = 1.6
+        let medianFilter           = MedianFilter()                         // was GPUImageMedianFilter()
+        let openingFilter          = OpeningFilter()                        // was GPUImageOpeningFilter()
+        let bilateralFilter        = BilateralBlur()                        // was GPUImageBilateralFilter()
+        let firstBrightnessFilter  = BrightnessAdjustment()                 // was GPUImageBrightnessFilter()
+        let contrastFilter         = ContrastAdjustment()                   // was GPUImageContrastFilter()
+        let secondBrightnessFilter = BrightnessAdjustment()                 // was GPUImageBrightnessFilter()
+        let thresholdFilter        = LuminanceThreshold()                   // was GPUImageLuminanceThresholdFilter()
+       
+//        bilateralFilter.texelSpacingMultiplier      = 0.8
+        bilateralFilter.distanceNormalizationFactor = 1.6
         firstBrightnessFilter.brightness            = -0.28
         contrastFilter.contrast                     = 2.35
         secondBrightnessFilter.brightness           = -0.08
-        biliteralFilter.texelSpacingMultiplier      = 0.8
-        biliteralFilter.distanceNormalizationFactor = 1.6
+//        bilateralFilter.texelSpacingMultiplier      = 0.8
+        bilateralFilter.distanceNormalizationFactor = 1.6
         thresholdFilter.threshold                   = 0.7
         
-        picture?               .addTarget(medianFilter)
-        medianFilter          .addTarget(openingFilter)
-        openingFilter         .addTarget(biliteralFilter)
-        biliteralFilter       .addTarget(firstBrightnessFilter)
-        firstBrightnessFilter .addTarget(contrastFilter)
-        contrastFilter        .addTarget(secondBrightnessFilter)
-        secondBrightnessFilter.addTarget(thresholdFilter)
+//        picture               .addTarget(medianFilter)
+//        medianFilter          .addTarget(openingFilter)
+//        openingFilter         .addTarget(bilateralFilter)
+//        bilateralFilter       .addTarget(firstBrightnessFilter)
+//        firstBrightnessFilter .addTarget(contrastFilter)
+//        contrastFilter        .addTarget(secondBrightnessFilter)
+//        secondBrightnessFilter.addTarget(thresholdFilter)
         
-        thresholdFilter.useNextFrameForImageCapture()
-        picture?.processImage()
+//        thresholdFilter.useNextFrameForImageCapture()
+//        picture.processImage()
         
-        var processedImage:OCRImage? = thresholdFilter.imageFromCurrentFramebuffer(with: UIImageOrientation.up)
+//        var processedImage:OCRImage? = thresholdFilter.imageFromCurrentFramebuffer(with: ImageOrientation.up)
         
-        while processedImage == nil || processedImage?.size == CGSize.zero {
-            thresholdFilter.useNextFrameForImageCapture()
-            picture?.processImage()
-            processedImage = thresholdFilter.imageFromCurrentFramebuffer(with: .up)
+//        while processedImage == nil || processedImage?.size == CGSize.zero {
+//            thresholdFilter.useNextFrameForImageCapture()
+//            picture.processImage()
+//            processedImage = thresholdFilter.imageFromCurrentFramebuffer(with: .up)
+//        }
+        
+        var processedImage = dodgeBlendImage.filterWithPipeline { input, output in
+            input --> medianFilter --> openingFilter --> bilateralFilter -->
+                firstBrightnessFilter --> contrastFilter --> secondBrightnessFilter --> thresholdFilter --> output
         }
         
-        return processedImage!
+//        return processedImage!
+        return processedImage
         
     }
     
