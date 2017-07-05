@@ -552,7 +552,7 @@ open class SwiftOCR {
 //            opacityFilter.useNextFrameForImageCapture()
             
             
-            let processedImage1 = inputImage.filterWithPipeline{input, output in
+            _ = inputImage.filterWithPipeline{input, output in
                 input --> grayFilter --> invertFilter --> blurFilter --> opacityFilter --> output
             }
             //Second image
@@ -630,7 +630,7 @@ open class SwiftOCR {
 //            processedImage = thresholdFilter.imageFromCurrentFramebuffer(with: .up)
 //        }
         
-        var processedImage = dodgeBlendImage.filterWithPipeline { input, output in
+        let processedImage = dodgeBlendImage.filterWithPipeline { input, output in
             input --> medianFilter --> openingFilter --> bilateralFilter -->
                 firstBrightnessFilter --> contrastFilter --> secondBrightnessFilter --> thresholdFilter --> output
         }
