@@ -1,0 +1,3 @@
+[submodule "Carthage/Checkouts/GPUImage2"]
+	path = Carthage/Checkouts/GPUImage2
+	url = https://github.com/gilimanjaro/GPUImage2.git
