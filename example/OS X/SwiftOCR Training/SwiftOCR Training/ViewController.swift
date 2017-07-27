@@ -30,6 +30,9 @@ class ViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSour
         // Do any additional setup after loading the view.
         
         globalNetwork = FFNN(inputs: 321, hidden: 100, outputs: recognizableCharacters.characters.count, learningRate: 0.7, momentum: 0.4, weights: nil, activationFunction: .Sigmoid, errorFunction: .crossEntropy(average: false))
+        @IBOutlet weak var photoView: NSImageView!
+        @IBAction func buttonClicked(_ sender: Any) {
+        }
         
         allFontNames = NSFontManager.shared().availableFonts
         
@@ -112,7 +115,7 @@ class ViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSour
             
             trainingProgressIndicator.startAnimation(nil)
             
-            DispatchQueue.global(priority: .high).async {
+            DispatchQueue.global(qos:.userInteractive).async {
                 
                 var callbackCount      = 0
                 var minimumError:Float = Float.infinity {
@@ -167,7 +170,7 @@ class ViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSour
         startTrainingButton.title = "Start Training"
         isTraining = false
 
-        DispatchQueue.global(priority: .default).async {
+        DispatchQueue.global(qos:.default).async {
             self.trainingInstance.testOCR() {accuracy in
                 DispatchQueue.main.async {
                     self.accuracyLabel.stringValue = "Accuracy: \(round(accuracy * 1000) / 10)%"
