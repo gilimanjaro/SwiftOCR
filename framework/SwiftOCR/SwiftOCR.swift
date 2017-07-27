@@ -531,8 +531,10 @@ open class SwiftOCR {
     open func preprocessImageForOCR(_ image:OCRImage) -> OCRImage {
         
         func getDodgeBlendImage(_ inputImage: OCRImage) -> OCRImage {
-//            let image  = PictureInput(image: inputImage)        // was GPUImagePicture
-//            let image2 = PictureInput(image: inputImage)        // was GPUImagePicture
+            let image  = PictureInput(image: inputImage)        // was GPUImagePicture
+            let image2 = PictureInput(image: inputImage)        // was GPUImagePicture
+            
+            let t1:NSImage = inputImage as NSImage
             
             //First image
             
@@ -544,22 +546,44 @@ open class SwiftOCR {
             blurFilter.blurRadiusInPixels = 9
             opacityFilter.opacity         = 0.93
             
+            let t2 = t1.filterWithPipeline{input, output in
+                input --> grayFilter --> output
+            }
+            
+            let t3 = t2.filterWithPipeline{input, output in
+                input --> invertFilter --> output
+            }
+            
+            let t4 = t3.filterWithPipeline{input, output in
+                input --> blurFilter --> output
+            }
+            
+            let t5 = t4.filterWithPipeline{input, output in
+                input --> opacityFilter --> output
+            }
+
+
+
+            
 //            image       .addTarget(grayFilter)
 //            grayFilter  .addTarget(invertFilter)
 //            invertFilter.addTarget(blurFilter)
 //            blurFilter  .addTarget(opacityFilter)
             
-//            opacityFilter.useNextFrameForImageCapture()
+            image --> grayFilter --> invertFilter --> blurFilter --> opacityFilter
             
+//            opacityFilter.useNextFrameForImageCapture()       //TODO: figure out what this did
             
-            _ = inputImage.filterWithPipeline{input, output in
-                input --> grayFilter --> invertFilter --> blurFilter --> opacityFilter --> output
-            }
             //Second image
             
             let grayFilter2 = Luminance()                       // was GPUImageGrayscaleFilter()
             
 //            image2.addTarget(grayFilter2)
+            image2 --> grayFilter2
+            
+            let t7 = t1.filterWithPipeline{input, output in
+                input --> opacityFilter --> output
+            }
             
 //            grayFilter2.useNextFrameForImageCapture()
             
@@ -568,16 +592,22 @@ open class SwiftOCR {
             let dodgeBlendFilter = ColorDodgeBlend()            // was GPUImageColorDodgeBlendFilter()
             
 //            grayFilter2.addTarget(dodgeBlendFilter)
+            grayFilter2 --> dodgeBlendFilter
 //            image2.processImage()
+            // TODO: what do I do here??
+            
+            let t8 = t7.filterWithPipeline{input, output in
+                input --> dodgeBlendFilter --> output
+            }
+
+            
             
 //            opacityFilter.addTarget(dodgeBlendFilter)
+            opacityFilter --> dodgeBlendFilter
             
 //            dodgeBlendFilter.useNextFrameForImageCapture()
 //            image.processImage()
-            
-            let processedImage2 = inputImage.filterWithPipeline{input,output in
-                input --> grayFilter2 --> dodgeBlendFilter --> opacityFilter --> output
-            }
+            // TODO: again, what does the useNextFrameForImageCapture do, and what does this processImage do
             
 //            var processedImage:OCRImage? = dodgeBlendFilter.imageFromCurrentFramebuffer(with: ImageOrientation.up)
             
@@ -586,9 +616,15 @@ open class SwiftOCR {
 //                image.processImage()
 //                processedImage = dodgeBlendFilter.imageFromCurrentFramebuffer(with: .up)
 //            }
+
+            var processedImage:OCRImage?;
             
-//            return processedImage!
-            return processedImage2
+            let pictureOutput = PictureOutput()
+            dodgeBlendFilter --> pictureOutput
+            pictureOutput.imageAvailableCallback = { processedImage = $0 }
+            image.processImage(synchronously:true)
+            
+            return processedImage!
         }
         
         let dodgeBlendImage        = getDodgeBlendImage(image)
@@ -602,7 +638,7 @@ open class SwiftOCR {
         let secondBrightnessFilter = BrightnessAdjustment()                 // was GPUImageBrightnessFilter()
         let thresholdFilter        = LuminanceThreshold()                   // was GPUImageLuminanceThresholdFilter()
        
-//        bilateralFilter.texelSpacingMultiplier      = 0.8
+//        bilateralFilter.texelSpacingMultiplier      = 0.8     // TODO: figure out if we can survive without this
         bilateralFilter.distanceNormalizationFactor = 1.6
         firstBrightnessFilter.brightness            = -0.28
         contrastFilter.contrast                     = 2.35
