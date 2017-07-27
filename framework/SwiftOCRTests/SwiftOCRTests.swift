@@ -10,15 +10,16 @@ import XCTest
 @testable import SwiftOCR
 
 class SwiftOCRTests: XCTestCase {
+//    let bundle = Bundle(for:SwiftOCR.self)
     
     #if os(iOS)
-    let testImageOne   = OCRImage(contentsOfFile: Bundle(for: SwiftOCR.self).path(forResource: "Test 1", ofType: "png")!)!
-    let testImageTwo   = OCRImage(contentsOfFile: Bundle(for: SwiftOCR.self).path(forResource: "Test 2", ofType: "png")!)!
-    let testImageThree = OCRImage(contentsOfFile: Bundle(for: SwiftOCR.self).path(forResource: "Test 3", ofType: "png")!)!
+    let testImageOne   = OCRImage(contentsOfFile: bundle.path(forResource: "Test 1", ofType: "png")!)!
+    let testImageTwo   = OCRImage(contentsOfFile: bundle.path(forResource: "Test 2", ofType: "png")!)!
+    let testImageThree = OCRImage(contentsOfFile: bundle.path(forResource: "Test 3", ofType: "png")!)!
     #else
-    let testImageOne   = OCRImage(byReferencingFile: NSBundle(forClass: SwiftOCR.self).pathForImageResource("Test 1.png")!)!
-    let testImageTwo   = OCRImage(byReferencingFile: NSBundle(forClass: SwiftOCR.self).pathForImageResource("Test 2.png")!)!
-    let testImageThree = OCRImage(byReferencingFile: NSBundle(forClass: SwiftOCR.self).pathForImageResource("Test 3.png")!)!
+    let testImageOne   = OCRImage(byReferencingFile: Bundle(for:SwiftOCR.self).pathForImageResource("Test 1.png")!)!
+    let testImageTwo   = OCRImage(byReferencingFile: Bundle(for:SwiftOCR.self).pathForImageResource("Test 2.png")!)!
+    let testImageThree = OCRImage(byReferencingFile: Bundle(for:SwiftOCR.self).pathForImageResource("Test 3.png")!)!
     #endif
     
     override class func setUp() {
@@ -88,7 +89,7 @@ class SwiftOCRTests: XCTestCase {
     }
     
     func testExtractBlobs() {
-        let ocrInstance = SwiftOCR
+        let ocrInstance = SwiftOCR()
         let preprocessedImage = ocrInstance.preprocessImageForOCR(self.testImageOne)
         
         measure({
@@ -98,7 +99,7 @@ class SwiftOCRTests: XCTestCase {
     }
     
     func testConvertImageToFloatArray() {
-        let ocrInstance = SwiftOCR
+        let ocrInstance = SwiftOCR()
         
         measure({
             let _ = ocrInstance.convertImageToFloatArray(self.testImageOne, resize: false)
@@ -106,7 +107,7 @@ class SwiftOCRTests: XCTestCase {
     }
     
     func testConvertImageToFloatArrayWithResize() {
-        let ocrInstance = SwiftOCR
+        let ocrInstance = SwiftOCR()
         
         measure({
             let _ = ocrInstance.convertImageToFloatArray(self.testImageOne, resize: true)
@@ -114,7 +115,7 @@ class SwiftOCRTests: XCTestCase {
     }
     
     func testPreprocessImageForOCR() {
-        let ocrInstance = SwiftOCR
+        let ocrInstance = SwiftOCR()
         
         measure({
             let _ = ocrInstance.preprocessImageForOCR(self.testImageOne)
